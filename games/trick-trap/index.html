@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trick Trap | Evolution Arcade</title>
+<meta name="description" content="A reflex game that lies to you. Play solo, against the computer, or duel friends online and fire tricks at their screen.">
+<meta name="theme-color" content="#050705">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <div class="hud">
+    <a class="brand" href="../../" title="Back to Evolution Arcade">Trick<br>Trap</a>
+    <div class="stat"><small>Level</small><b id="hLevel">1</b></div>
+    <div class="stat" id="hMultBox"><small>Streak</small><b id="hMult">×1</b></div>
+    <div class="stat"><small>Score</small><b id="hScore">0</b></div>
+    <div class="stat"><small>Lives</small><div class="lives" id="hLives"><i></i><i></i><i></i></div></div>
+  </div>
+  <div class="timer"><span id="hTimer"></span></div>
+  <div class="plate" id="plate">
+    <div class="lbl" id="plateLbl">The rule</div>
+    <div class="rule" id="rule">Don't touch anything red</div>
+    <div class="prog"><span id="prog">0 / 6</span><small>SAFE TAPS</small></div>
+  </div>
+  <div class="duel" id="rivals" hidden></div>
+  <div class="arena" id="arena"></div>
+  <div class="strip" id="strip"></div>
+  <div class="tbar" id="tbar" hidden>
+    <div class="chg"><span>Trap charge</span><span class="pips" id="pips"></span></div>
+    <div class="tks" id="tks"></div>
+  </div>
+</div>
+<div class="overlay" id="overlay"></div>
+<script type="module" src="game.js"></script>
+</body>
+</html>

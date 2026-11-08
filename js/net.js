@@ -46,4 +46,5 @@ export async function roomGame(code) {
 
 export const GAME_PATHS = {
   "tic-tac-gone": "games/tic-tac-gone/",
+  "trick-trap": "games/trick-trap/",
 };
