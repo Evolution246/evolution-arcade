@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".read": true,
+        ".write": "$code.length === 4",
+        ".validate": "newData.hasChildren(['game'])"
+      }
+    }
+  }
+}

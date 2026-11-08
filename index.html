@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Evolution Arcade | Free multiplayer browser games</title>
+<meta name="description" content="Free head-to-head browser games from Evolution Wraps. Play a friend with a room code or go solo against the computer.">
+<meta name="theme-color" content="#050705">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/orbitron-latin-900-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/arcade.css">
+<style>
+.hero{position:relative;min-height:600px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 20px 150px}
+.grid{position:absolute;left:-30%;right:-30%;bottom:-220px;height:470px;background-image:linear-gradient(var(--g) 1px,transparent 1px),linear-gradient(90deg,var(--g) 1px,transparent 1px);background-size:60px 60px;transform:perspective(380px) rotateX(62deg);opacity:.32;-webkit-mask-image:linear-gradient(to top,#000 20%,transparent 85%);mask-image:linear-gradient(to top,#000 20%,transparent 85%);animation:roll 2.4s linear infinite}
+@keyframes roll{to{background-position:0 60px}}
+.sun{position:absolute;bottom:-260px;left:50%;width:620px;height:620px;margin-left:-310px;border-radius:50%;background:radial-gradient(circle,rgba(57,255,20,.22),transparent 62%)}
+.horizon{position:absolute;bottom:22px;left:0;right:0;height:2px;background:var(--g);box-shadow:0 0 24px 4px var(--g);opacity:.7}
+.hero .tag{position:relative;margin-bottom:22px}
+.hero .tag::before,.hero .tag::after{content:"";display:inline-block;width:40px;height:1px;background:var(--g);vertical-align:middle;margin:0 16px}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(52px,9vw,108px);line-height:.95;letter-spacing:4px;color:#fff;position:relative;margin:0}
+h1 em{font-style:normal;color:var(--g);text-shadow:0 0 18px rgba(57,255,20,.9),0 0 60px rgba(57,255,20,.5);display:block}
+.sub{margin:26px 0 0;font-size:clamp(18px,2vw,22px);max-width:640px;position:relative}
+.cta{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:34px;position:relative}
+.stats{display:flex;flex-wrap:wrap;justify-content:center;border-top:1px solid #132313;border-bottom:1px solid #132313;background:var(--panel2)}
+.stat{padding:22px clamp(24px,4vw,60px);border-right:1px solid #132313;text-align:center}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:var(--display);font-size:30px;color:var(--g);text-shadow:0 0 10px rgba(57,255,20,.6)}
+.stat span{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--m)}
+.lineup{padding:70px clamp(18px,4.5vw,64px) 80px}
+.sh{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-end;margin-bottom:34px}
+.sh h2{font-family:var(--display);font-weight:900;font-size:clamp(30px,3.5vw,40px);color:#fff;letter-spacing:2px;margin:0}
+.sh h2 small{display:block;font-family:var(--mono);font-size:13px;color:var(--g);letter-spacing:5px;margin-bottom:10px;font-weight:400}
+.filters{display:flex;flex-wrap:wrap;gap:10px;font-family:var(--mono);font-size:13px;letter-spacing:2px}
+.filters button{padding:8px 16px;border:1px solid #1d351a;color:var(--m);font-family:var(--mono);letter-spacing:2px;font-size:13px}
+.filters button.on{border-color:var(--g);color:var(--g);background:var(--g-soft)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:26px}
+.card{display:block;background:var(--panel);border:1px solid var(--line);position:relative;clip-path:polygon(18px 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%,0 18px);transition:border-color .2s,transform .2s}
+.card.live{border-color:var(--g);box-shadow:inset 0 0 40px rgba(57,255,20,.08)}
+a.card:hover{transform:translateY(-4px);border-color:var(--g)}
+a.card:hover .art svg{filter:drop-shadow(0 0 14px rgba(57,255,20,1))}
+.card[hidden]{display:none}
+.art{height:206px;padding-top:30px;background:radial-gradient(ellipse at 50% 120%,rgba(57,255,20,.18),transparent 70%),#060906;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #132313;position:relative}
+.art svg{filter:drop-shadow(0 0 8px rgba(57,255,20,.8));transition:filter .2s}
+.modes{position:absolute;top:14px;left:14px;display:flex;gap:6px}
+.badge{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:5px 10px;border:1px solid var(--line2);color:var(--m)}
+.badge.on{color:#031003;background:var(--g);border-color:var(--g)}
+.badge.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#031003;margin-right:7px;vertical-align:1px}
+.body{padding:22px 24px 24px}
+.body h3{font-family:var(--display);font-weight:700;font-size:21px;color:#fff;letter-spacing:1.5px;margin:0}
+.body p{margin:8px 0 0;font-size:17px;color:var(--t2);line-height:1.35;min-height:46px}
+.meta{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--m)}
+.meta i{font-style:normal;color:var(--g)}
+.play{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:2px;color:var(--g)}
+.soon .play{color:var(--m)}
+.lobby{margin:0 clamp(18px,4.5vw,64px) 70px;border:1px solid var(--line);background:linear-gradient(90deg,rgba(57,255,20,.08),transparent 60%),var(--panel2);display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;padding:clamp(24px,3vw,34px) clamp(20px,3.5vw,44px)}
+.lobby h4{font-family:var(--display);font-size:26px;color:#fff;letter-spacing:2px;margin:0}
+.lobby p{color:var(--t2);font-size:18px;margin:6px 0 0}
+.join{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.join input{width:230px;height:66px;border:1px solid var(--g);background:var(--g-soft);color:var(--g);font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:16px;text-align:center;text-transform:uppercase;padding-left:16px}
+.join input::placeholder{color:#24461f}
+.join .msg{flex-basis:100%;font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--m);min-height:18px}
+.join .msg.err{color:var(--red)}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="./">EVOLUTION<span>//</span>ARCADE</a>
+  <div class="nav-links"><a class="on" href="#games">GAMES</a><a href="#join">JOIN A ROOM</a><a class="keep" href="https://evolution-wraps.com">EVOLUTION-WRAPS.COM ↗</a></div>
+</nav>
+
+<header class="hero">
+  <div class="sun"></div><div class="horizon"></div><div class="grid"></div>
+  <div class="tag">MULTIPLAYER · IN YOUR BROWSER</div>
+  <h1>INSERT<em>PLAYER 2</em></h1>
+  <p class="sub">Challenge a friend with a room code, or go solo against the computer. Free, and nothing to download.</p>
+  <div class="cta">
+    <a class="btn fill" href="#games">▶ PLAY NOW</a>
+    <a class="btn" href="games/tic-tac-gone/?mode=cpu">VS COMPUTER</a>
+    <a class="btn" href="#join">ENTER ROOM CODE</a>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>06</b><span>GAMES</span></div>
+  <div class="stat"><b>1–4</b><span>PLAYERS</span></div>
+  <div class="stat"><b>CPU</b><span>SOLO MODE ON EVERY GAME</span></div>
+  <div class="stat"><b>$0</b><span>FREE TO PLAY</span></div>
+</div>
+
+<main class="lineup" id="games">
+  <div class="sh">
+    <h2><small>&gt; SELECT GAME_</small>THE LINEUP</h2>
+    <div class="filters" role="group" aria-label="Filter games">
+      <button class="on" data-f="all">ALL</button><button data-f="turn">TURN-BASED</button><button data-f="reaction">REACTION</button><button data-f="live">PLAY NOW</button>
+    </div>
+  </div>
+  <div class="cards">
+    <a class="card live" href="games/tic-tac-gone/" data-k="turn live">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge on">LIVE</span>
+        <svg width="140" height="140" viewBox="0 0 140 140" fill="none" stroke="#39ff14" stroke-width="3" aria-hidden="true"><path d="M50 10v120M90 10v120M10 50h120M10 90h120"/><path d="M18 18l24 24M42 18l-24 24" stroke-dasharray="5 5" opacity=".35"/><circle cx="70" cy="30" r="12"/><path d="M58 58l24 24M82 58l-24 24"/><circle cx="110" cy="70" r="12"/><path d="M98 98l24 24M122 98l-24 24"/><circle cx="30" cy="110" r="12" opacity=".55"/></svg></div>
+      <div class="body"><h3>TIC-TAC-GONE</h3><p>Only 3 pieces each. Place a 4th and your oldest vanishes. No ties, ever.</p><div class="meta"><span><i>1V1</i> · TURN-BASED</span><span class="play">PLAY ▶</span></div></div>
+    </a>
+    <div class="card soon" data-k="reaction">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge">COMING SOON</span>
+        <svg width="170" height="130" viewBox="0 0 170 130" fill="none" stroke="#39ff14" stroke-width="3" aria-hidden="true"><rect x="18" y="58" width="36" height="36" opacity=".45"/><circle cx="125" cy="40" r="17" opacity=".45"/><path d="M85 22l32 56H53z" fill="#39ff14" fill-opacity=".15"/><path d="M85 42v18" stroke-width="4"/><circle cx="85" cy="68" r="2.5" fill="#39ff14"/><path d="M112 82l6 30 7-11 12 12 6-6-12-12 11-7z" fill="#050705" stroke-width="2.5"/></svg></div>
+      <div class="body"><h3>TRICK TRAP</h3><p>Same rule, same board, live. Clear shapes to charge tricks, then fire them at your rival.</p><div class="meta"><span><i>1–4</i> PLAYERS · REACTION</span><span class="play">SOON</span></div></div>
+    </div>
+    <div class="card soon" data-k="reaction">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge">COMING SOON</span>
+        <svg width="90" height="140" viewBox="0 0 90 140" fill="none" stroke="#39ff14" stroke-width="3" aria-hidden="true"><rect x="25" y="5" width="40" height="130" rx="4"/><circle cx="45" cy="25" r="8" opacity=".35"/><circle cx="45" cy="50" r="8" fill="#39ff14" fill-opacity=".9"/><circle cx="45" cy="75" r="8" fill="#39ff14" fill-opacity=".9"/><circle cx="45" cy="100" r="8" opacity=".35"/><path d="M5 120h20M65 120h20"/></svg></div>
+      <div class="body"><h3>LAUNCH CONTROL</h3><p>1v1 drag race. Nail the tree, hit your shifts, take the win.</p><div class="meta"><span><i>1V1</i> · REACTION</span><span class="play">SOON</span></div></div>
+    </div>
+    <div class="card soon" data-k="turn">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge">COMING SOON</span>
+        <svg width="140" height="140" viewBox="0 0 140 140" fill="none" stroke="#39ff14" stroke-width="2" aria-hidden="true"><path d="M10 10h120v120H10zM40 10v120M70 10v120M100 10v120M10 40h120M10 70h120M10 100h120" opacity=".45"/><rect x="41" y="41" width="58" height="28" fill="#39ff14" fill-opacity=".25" stroke-width="3"/><path d="M106 76l18 18M124 76l-18 18" stroke-width="4"/><circle cx="25" cy="115" r="5" fill="#39ff14"/></svg></div>
+      <div class="body"><h3>GRID STRIKE</h3><p>Hide your fleet, call your shots, sink theirs before they find you.</p><div class="meta"><span><i>1V1</i> · TURN-BASED</span><span class="play">SOON</span></div></div>
+    </div>
+    <div class="card soon" data-k="turn">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge">COMING SOON</span>
+        <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="#39ff14" stroke-width="3" aria-hidden="true"><rect x="10" y="20" width="40" height="70"/><rect x="65" y="20" width="40" height="70" fill="#39ff14" fill-opacity=".25"/><rect x="120" y="20" width="40" height="70"/><path d="M10 72h40M65 72h40M120 72h40" opacity=".5"/><path d="M85 5v8M85 97v8"/></svg></div>
+      <div class="body"><h3>SWATCH MATCH</h3><p>Memory duel. Flip the color swatches and lock in more pairs than your rival.</p><div class="meta"><span><i>2–4</i> PLAYERS · MEMORY</span><span class="play">SOON</span></div></div>
+    </div>
+    <div class="card soon" data-k="turn">
+      <div class="art"><div class="modes"><span class="chip">ONLINE</span><span class="chip">VS CPU</span></div><span class="badge">COMING SOON</span>
+        <svg width="150" height="130" viewBox="0 0 150 130" fill="none" stroke="#39ff14" stroke-width="3" aria-hidden="true"><g opacity=".4"><circle cx="30" cy="30" r="11"/><circle cx="60" cy="30" r="11"/><circle cx="90" cy="30" r="11"/><circle cx="120" cy="30" r="11"/><circle cx="30" cy="60" r="11"/><circle cx="120" cy="60" r="11"/></g><circle cx="60" cy="60" r="11" fill="#39ff14"/><circle cx="90" cy="60" r="11" fill="#39ff14"/><circle cx="60" cy="90" r="11" fill="#39ff14"/><circle cx="90" cy="90" r="11" fill="#39ff14" fill-opacity=".3"/><circle cx="30" cy="90" r="11" opacity=".4"/><circle cx="120" cy="90" r="11" opacity=".4"/><path d="M15 110h120"/></svg></div>
+      <div class="body"><h3>FOUR DOWN</h3><p>Drop, block, connect four. The classic, now online with friends.</p><div class="meta"><span><i>1V1</i> · TURN-BASED</span><span class="play">SOON</span></div></div>
+    </div>
+  </div>
+</main>
+
+<section class="lobby" id="join">
+  <div><h4>GOT A ROOM CODE?</h4><p>Your friend already made a game. Enter the code to jump straight in.</p></div>
+  <form class="join" id="joinForm" autocomplete="off">
+    <input id="code" maxlength="4" placeholder="____" aria-label="Room code" inputmode="text" autocapitalize="characters" spellcheck="false">
+    <button class="btn fill" type="submit">JOIN ▶</button>
+    <div class="msg" id="joinMsg" role="status"></div>
+  </form>
+</section>
+
+<footer class="footer"><span>© 2026 EVOLUTION WRAPS · BAKERSFIELD, CA</span><span>GAMES.EVOLUTION-WRAPS.COM</span><span>SYSTEM ONLINE <b>●</b></span></footer>
+
+<script type="module">
+import { onlineReady, cleanCode, roomGame, GAME_PATHS } from "./js/net.js";
+
+// filters
+const btns = document.querySelectorAll(".filters button");
+btns.forEach(b => b.onclick = () => {
+  btns.forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".card").forEach(c => {
+    c.hidden = b.dataset.f !== "all" && !c.dataset.k.split(" ").includes(b.dataset.f);
+  });
+});
+
+// join by room code
+const input = document.getElementById("code"), msg = document.getElementById("joinMsg");
+input.addEventListener("input", () => { input.value = cleanCode(input.value); msg.textContent = ""; msg.className = "msg"; });
+document.getElementById("joinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = cleanCode(input.value);
+  const say = (t, err) => { msg.textContent = t; msg.className = "msg" + (err ? " err" : ""); };
+  if (code.length !== 4) return say("Room codes are 4 characters.", true);
+  if (!onlineReady) return say("Online rooms are coming soon. Try VS Computer for now.", true);
+  say("Looking for room " + code + "…");
+  try {
+    const game = await roomGame(code);
+    if (!game || !GAME_PATHS[game]) return say("No room with that code. Double-check it with your friend.", true);
+    location.href = GAME_PATHS[game] + "?room=" + code;
+  } catch { say("Couldn't reach the game server. Try again in a moment.", true); }
+});
+</script>
+</body>
+</html>
