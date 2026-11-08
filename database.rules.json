@@ -4,7 +4,7 @@
       "$code": {
         ".read": true,
         ".write": "$code.length === 4",
-        ".validate": "newData.hasChildren(['game'])"
+        ".validate": "newData.hasChildren(['game']) && newData.child('game').isString() && newData.child('game').val().length < 40"
       }
     }
   }
