@@ -51,12 +51,13 @@ main{max-width:620px;margin:0 auto;padding:clamp(18px,4vw,40px) 18px 60px}
 .status.lose{color:var(--red)}
 .hint{text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--m);min-height:18px;margin-bottom:14px}
 
-.board{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:0;aspect-ratio:1;max-width:460px;margin:0 auto;border:1px solid var(--line)}
-.cell{position:relative;border:1px solid #1f3d1c;background:radial-gradient(circle at 50% 60%,rgba(57,255,20,.05),transparent 70%);display:flex;align-items:center;justify-content:center;padding:18%;cursor:pointer;transition:background .15s}
+.board{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;aspect-ratio:1;width:100%;max-width:460px;margin:0 auto;border:1px solid var(--line)}
+.cell{position:relative;border:1px solid #1f3d1c;background:radial-gradient(circle at 50% 60%,rgba(57,255,20,.05),transparent 70%);display:block;padding:0;min-width:0;min-height:0;overflow:hidden;cursor:pointer;transition:background .15s}
 .cell:not(.full):hover{background:rgba(57,255,20,.08)}
 .board.locked .cell{cursor:default}
 .board.locked .cell:not(.full):hover{background:none}
-.cell svg{width:100%;height:100%;overflow:visible}
+/* pieces sit on top of the square, so they can never change its size */
+.cell>svg{position:absolute;inset:18%;width:64%;height:64%;overflow:visible}
 .cell .mk path,.cell .mk circle{stroke-dasharray:200;stroke-dashoffset:0;animation:draw .28s ease-out}
 @keyframes draw{from{stroke-dashoffset:200}}
 .mk.x{color:var(--g);filter:drop-shadow(0 0 7px rgba(57,255,20,.85))}
