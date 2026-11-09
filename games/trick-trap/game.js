@@ -37,8 +37,39 @@ const MILESTONES={
 };
 
 /* ---------- duel tuning ---------- */
-const COST={shift:1,bait:1,stroop:2,swap:2,fake:3,chase:4};
-const SEND_ORDER=['shift','bait','stroop','swap','fake','chase'];
+// Every action a duel player can fire or raise. kind 'def' = defense.
+const ACTIONS={
+  shift:{name:'Color Swap',cost:1,kind:'off',desc:'Safe shapes flip to forbidden'},
+  stroop:{name:'Lying Labels',cost:2,kind:'off',desc:'Labels contradict the colors'},
+  swap:{name:'Switcheroo',cost:2,kind:'off',desc:'Safe and forbidden trade places'},
+  fake:{name:'Fake Orders',cost:3,kind:'off',desc:'A fake rule update pops up'},
+  chase:{name:'Ambush',cost:4,kind:'off',desc:'Forbidden shapes chase their finger'},
+  bait:{name:'Bonus Bait',cost:1,kind:'off',desc:'A shiny forbidden prize'},
+  ink:{name:'Ink Splat',cost:2,kind:'off',desc:'Neon paint splats cover their screen'},
+  blackout:{name:'Blackout',cost:4,kind:'off',desc:'Lights out except a small flashlight'},
+  quake:{name:'Earthquake',cost:2,kind:'off',desc:'Their whole board shakes'},
+  fog:{name:'Fog',cost:3,kind:'off',desc:'Thick haze rolls over their board'},
+  swarm:{name:'Swarm',cost:3,kind:'off',desc:'Six extra forbidden shapes flood in'},
+  giant:{name:'Giant',cost:3,kind:'off',desc:'A huge forbidden shape crawls across'},
+  mirror:{name:'Mirror',cost:3,kind:'off',desc:'Their board flips left to right'},
+  slip:{name:'Slippery',cost:2,kind:'off',desc:'Their taps land off target'},
+  shrink:{name:'Shrink Ray',cost:2,kind:'off',desc:'Every shape shrinks to half size'},
+  speed:{name:'Speed Up',cost:2,kind:'off',desc:'Their shapes move twice as fast'},
+  scramble:{name:'Rule Scramble',cost:2,kind:'off',desc:'Their rule bar turns to gibberish'},
+  clock:{name:'Clock Steal',cost:3,kind:'off',desc:'Takes 4 seconds off their timer'},
+  drain:{name:'Charge Drain',cost:2,kind:'off',desc:'Steals half their trap charge'},
+  shield:{name:'Shield',cost:2,kind:'def',desc:'Blocks the next action (10s)'},
+  reflect:{name:'Reflect',cost:3,kind:'def',desc:'Bounces the next action back (10s)'},
+  cleanse:{name:'Cleanse',cost:1,kind:'def',desc:'Clears everything on your screen'},
+  decoy:{name:'Decoy Signal',cost:2,kind:'def',desc:'Rivals see fake progress (10s)'},
+};
+const COST=Object.fromEntries(Object.entries(ACTIONS).map(([k,a])=>[k,a.cost]));
+const LOADOUTS={
+  strategist:{name:'Strategist',tag:'Every defense, plus the sneaky classics',acts:['shield','reflect','cleanse','decoy','stroop','swap','fake','chase']},
+  prankster:{name:'Prankster',tag:'Loud visual chaos',acts:['ink','blackout','quake','fog','swarm','giant','bait','cleanse']},
+  hacker:{name:'Hacker',tag:'Messes with controls and stats',acts:['mirror','slip','shrink','speed','scramble','clock','drain','shield']},
+};
+const DEF_LOCK={shield:10,reflect:10,cleanse:3,decoy:10};
 const MAX_CHARGE=8;
 const INTRO_SECS=3;
 
@@ -68,7 +99,8 @@ function stat(k){return store.stats[k]||(store.stats[k]={levels:0,fooled:0});}
 
 const G={level:1,lives:3,score:0,streak:0,running:false,tiles:[],rule:null,need:6,got:0,timeLeft:20,timeMax:20,
   tricks:[],freezeUntil:0,ptr:{x:150,y:150},T:{},W:300,H:300,size:64,speed:50,N:7,levelFools:{},levelLost:false,
-  boss:false,notes:[],pace:1,tpace:{},glitchUntil:0,endless:false,charge:0,inbox:[],lastSent:null};
+  boss:false,notes:[],pace:1,tpace:{},glitchUntil:0,endless:false,charge:0,inbox:[],lastSent:null,
+  fx:[],def:null,slip:null,speedMul:1,decoy:null};
 let uid=0;
 
 /* Duel session. mode: 'solo' | 'cpu' | 'online' */
@@ -76,6 +108,7 @@ const M={mode:'solo',active:false,out:false,outAt:0,seed:'',round:0,introTimer:n
   me:{id:playerId(),name:''},rivals:[],bot:null,level:'medium',room:null,order:[],seenEvents:new Set()};
 const duel=()=>M.mode!=='solo';
 try{M.me.name=localStorage.getItem('evo-arcade-name')||'';}catch(e){}
+M.loadout='strategist';try{const l=localStorage.getItem('tt-loadout');if(LOADOUTS[l])M.loadout=l;}catch(e){}
 
 /* ---------- difficulty curve ---------- */
 const D={
@@ -84,13 +117,13 @@ const D={
   trickCount:l=>l<=2?1:l<=4?2:l<=9?3:l<=14?4:l<=19?5:6,
   need:l=>Math.min(12,5+Math.floor(l/2)),
   tiles:l=>Math.min(14,6+l),
-  speed:l=>Math.min(250,40+l*8),
+  speed:l=>Math.min(125,20+l*4),          // half the original speed
   badShare:l=>.4+Math.min(.2,(l-1)*.0105),
   flicker:l=>Math.max(200,420-(l-1)*20),
   smart:l=>Math.min(.95,.3+l*.035),
   pace:l=>Math.max(.38,1-l*.021),
   chasers:l=>l>=20?3:l>=7?2:1,
-  time:(l,need)=>Math.max(Math.round(need*1.5+6),Math.round(16+need*1.6-.5*(l-1)))
+  time:(l,need)=>2*Math.max(Math.round(need*1.5+6),Math.round(16+need*1.6-.5*(l-1)))   // double the original time
 };
 
 /* ---------- rules ---------- */
@@ -223,6 +256,7 @@ function render(t,ts){
   let c='tile '+t.shape;
   if(t.color==='yellow')c+=' dark';
   if(t.chaser)c+=' chaser';
+  if(t.giant)c+=' giant';
   if(t.bait)c+=' bait';
   else if(ts<t.beckonUntil)c+=' beckon';
   else if(ts<t.fxUntil)c+=' '+t.fx;
@@ -283,8 +317,8 @@ function runTricks(ts){
   if(has('swap')&&ts>T.swap){T.swap=ts+rnd(1800,3000)*p('swap');doSwap();}
   if(has('fake')&&ts>T.fake){T.fake=ts+rnd(3800,5600)*p('fake');doFake();}
   if(has('bait')&&ts>T.bait){T.bait=ts+rnd(4000,6000)*p('bait');doBait();}
+  if(G.glitchUntil&&ts>G.glitchUntil)unglitch();
   if(G.level>=15){
-    if(G.glitchUntil&&ts>G.glitchUntil)unglitch();
     if(!G.glitchUntil&&ts>T.glitch){T.glitch=ts+rnd(3500,6000)*Math.max(.6,G.pace*1.2);glitch(ts);}
   }
 }
@@ -302,26 +336,81 @@ function sentChase(){
     t.chaser=true;t.trick='chase';t.trickUntil=now()+7000;t.chaseUntil=now()+7000;
   }
 }
-function applyIncoming(k,from){
+// timed screen effects: each has an off() so Cleanse (or the clock) can remove it
+function addFx(k,secs,on,off){
+  on&&on();
+  const f={k,until:now()+secs*1000,off};G.fx.push(f);return f;
+}
+function clearFx(){for(const f of G.fx.splice(0))try{f.off&&f.off();}catch(e){}G.slip=null;G.speedMul=1;arena.classList.remove('quake','mirror','shrink');}
+function tickFx(ts){
+  for(const f of [...G.fx])if(ts>f.until){G.fx.splice(G.fx.indexOf(f),1);try{f.off&&f.off();}catch(e){}}
+}
+function overlayEl(cls,html=''){const d=document.createElement('div');d.className='fxo '+cls;d.innerHTML=html;arena.appendChild(d);return d;}
+function cleanse(){
+  clearFx();
+  for(const t of [...G.tiles]){
+    if(t.sent){kill(t);continue;}
+    if(t.chaseUntil){t.chaser=false;t.chaseUntil=0;}
+    if(t.trick==='stroop'&&t.trickUntil!==Infinity){t.label='';t.trick=null;}
+  }
+  arena.querySelectorAll('.banner').forEach(e=>e.remove());
+  if(G.glitchUntil)unglitch();
+}
+function applyIncoming(k,from,fromId,amt){
   if(!G.running||M.out)return;
   const el=document.createElement('div');el.className='incoming';
-  el.innerHTML=`<b>⚠ INCOMING FROM ${esc(up(from))}</b>${up(TRICKS[k].name)}`;
+  el.innerHTML=`<b>⚠ INCOMING FROM ${esc(up(from))}</b>${up(ACTIONS[k]?.name||k)}`;
   arena.appendChild(el);setTimeout(()=>el.remove(),1700);
   G.lastSent={by:from,until:now()+6000};
   setTimeout(()=>{
     if(!G.running)return;
-    if(k==='shift'){doShift();setTimeout(()=>G.running&&doShift(),650);}
-    else if(k==='swap'){doSwap();setTimeout(()=>G.running&&doSwap(),550);}
-    else if(k==='fake')doFake();
-    else if(k==='bait'){G.tiles.filter(t=>t.bait).forEach(kill);doBait();}
-    else if(k==='stroop')sentStroop();
-    else if(k==='chase')sentChase();
+    const t0=now();
+    switch(k){
+      case 'shift':doShift();setTimeout(()=>G.running&&doShift(),650);break;
+      case 'swap':doSwap();setTimeout(()=>G.running&&doSwap(),550);break;
+      case 'fake':doFake();break;
+      case 'bait':G.tiles.filter(t=>t.bait).forEach(kill);doBait();break;
+      case 'stroop':sentStroop();break;
+      case 'chase':sentChase();break;
+      case 'ink':{const els=[0,1,2].map(i=>{const e=overlayEl('splat');const s=rnd(.38,.55)*G.W;
+        e.style.cssText=`width:${s}px;height:${s}px;left:${rnd(-.1,.75)*G.W}px;top:${rnd(-.1,.7)*G.H}px;--h:${pick([110,320,190,40])}`;return e;});
+        addFx(k,5.5,null,()=>els.forEach(e=>e.remove()));break;}
+      case 'blackout':{const e=overlayEl('blackout');addFx(k,4.5,null,()=>e.remove());break;}
+      case 'quake':addFx(k,3.2,()=>arena.classList.add('quake'),()=>arena.classList.remove('quake'));break;
+      case 'fog':{const e=overlayEl('fog');addFx(k,5,null,()=>e.remove());break;}
+      case 'swarm':for(let i=0;i<6;i++){const t=spawn(true,{sent:true});t.expires=t0+7000;t.trick='swarm';t.trickUntil=t0+7000;}break;
+      case 'giant':{const t=spawn(true,{sent:true,giant:true});t.size=Math.round(G.size*2.6);t.el.style.setProperty('--s',t.size+'px');
+        t.x=-t.size*.5;t.y=rnd(0,Math.max(1,G.H-t.size));t.vx=G.W/7;t.vy=rnd(-20,20);t.expires=t0+7000;t.trick='giant';t.trickUntil=t0+7000;break;}
+      case 'mirror':addFx(k,5,()=>arena.classList.add('mirror'),()=>arena.classList.remove('mirror'));break;
+      case 'slip':{const a=rnd(0,Math.PI*2);addFx(k,6,()=>{G.slip={dx:Math.cos(a)*34,dy:Math.sin(a)*34};},()=>{G.slip=null;});break;}
+      case 'shrink':addFx(k,6,()=>arena.classList.add('shrink'),()=>arena.classList.remove('shrink'));break;
+      case 'speed':addFx(k,5,()=>{G.speedMul=2.2;},()=>{G.speedMul=1;});break;
+      case 'scramble':{glitch(t0);G.glitchUntil=t0+4000;addFx(k,4,null,()=>{if(G.glitchUntil)unglitch();});break;}
+      case 'clock':G.timeLeft=Math.max(2,G.timeLeft-4);floatText(G.W/2-24,30,'−4s','hurt');break;
+      case 'drain':{const n=Math.ceil(G.charge/2);G.charge-=n;renderTricks();pub();floatText(G.W/2-60,G.H-40,`−${n} ⚡ stolen`,'hurt');
+        if(n>0)giveBack(fromId,'_charge',n);break;}
+    }
   },350);
 }
-function receive(k,from){
+// small notes sent back to whoever fired something at me
+function giveBack(toId,k,amt){
+  if(M.mode==='cpu'){if(k==='_charge'&&M.bot)M.bot.charge=Math.min(MAX_CHARGE,M.bot.charge+amt);return;}
+  if(toId)sendEvent(toId,k,amt);
+}
+function receive(k,from,fromId,amt){
   if(!M.active||M.out)return;
-  if(G.running)applyIncoming(k,from);
-  else G.inbox.push([k,from]);
+  if(k==='_blocked'){floatText(G.W/2-80,G.H-40,`${from} blocked it`,'hurt');return;}
+  if(k==='_charge'){G.charge=Math.min(MAX_CHARGE,G.charge+(amt||0));renderTricks();pub();floatText(G.W/2-60,G.H-40,`+${amt} ⚡ stolen`,'sent');return;}
+  if(!G.running){G.inbox.push([k,from,fromId,amt]);return;}
+  // a raised Shield or Reflect stops exactly one incoming action
+  if(G.def&&now()<G.def.until&&(G.def.k==='shield'||G.def.k==='reflect')){
+    const d=G.def.k;G.def=null;arena.classList.remove('def-shield','def-reflect');renderTricks();
+    if(d==='shield'){toast('BLOCKED',`${ACTIONS[k]?.name||k} from ${from}`,true);giveBack(fromId,'_blocked');}
+    else{toast('REFLECTED',`${ACTIONS[k]?.name||k} → ${from}`,true);
+      if(M.mode==='cpu')botReceive(k);else if(fromId)sendEvent(fromId,k);}
+    return;
+  }
+  applyIncoming(k,from,fromId,amt);
 }
 
 /* ---------- loop ---------- */
@@ -336,14 +425,15 @@ function move(dt,ts){
       t.vx+=dx/d*acc*dt;t.vy+=dy/d*acc*dt;
       const v=Math.hypot(t.vx,t.vy),max=G.speed*1.35;if(v>max){t.vx*=max/v;t.vy*=max/v;}
     }
-    t.x+=t.vx*dt;t.y+=t.vy*dt;
+    if(t.giant){t.x+=t.vx*dt;t.y+=t.vy*dt;continue;}
+    t.x+=t.vx*dt*G.speedMul;t.y+=t.vy*dt*G.speedMul;
     const mx=G.W-t.size,my=G.H-t.size;
     if(t.x<0){t.x=0;t.vx=Math.abs(t.vx);}if(t.x>mx){t.x=Math.max(0,mx);t.vx=-Math.abs(t.vx);}
     if(t.y<0){t.y=0;t.vy=Math.abs(t.vy);}if(t.y>my){t.y=Math.max(0,my);t.vy=-Math.abs(t.vy);}
   }
 }
 function maintain(){
-  const live=G.tiles.filter(t=>!t.bait),share=D.badShare(G.level);
+  const live=G.tiles.filter(t=>!t.bait&&!t.sent),share=D.badShare(G.level);
   while(live.length<G.N){
     const fc=live.filter(forbidden).length,sc=live.length-fc;
     live.push(spawn(sc<2?false:fc<Math.ceil(G.N*share)));
@@ -356,6 +446,9 @@ function maintain(){
 let last=now();
 function loop(ts){
   const dt=Math.min(.05,(ts-last)/1000);last=ts;
+  if(duel()){tickFx(ts);if(G.def&&ts>G.def.until){endDef();}
+    if(ts-(G._trT||0)>300){G._trT=ts;renderTricks();}
+    if(G.blk){const b=arena.querySelector('.blackout');if(b)b.style.cssText=`--x:${G.ptr.x}px;--y:${G.ptr.y}px`;}}
   if(G.running&&ts>=G.freezeUntil){
     G.timeLeft-=dt;
     if(G.timeLeft<=0)timeout();
@@ -370,19 +463,22 @@ function measure(){G.W=arena.clientWidth;G.H=arena.clientHeight;G.size=Math.roun
 addEventListener('resize',measure);
 
 /* ---------- input ---------- */
-function setPtr(e){const r=arena.getBoundingClientRect();G.ptr={x:e.clientX-r.left,y:e.clientY-r.top};}
+function setPtr(e){const r=arena.getBoundingClientRect();G.ptr={x:e.clientX-r.left,y:e.clientY-r.top};if(arena.classList.contains('mirror'))G.ptr.x=G.W-G.ptr.x;G.blk=!!arena.querySelector('.blackout');}
 arena.addEventListener('pointermove',setPtr);
 arena.addEventListener('pointerdown',e=>{
   setPtr(e);
   if(!G.running||now()<G.freezeUntil)return;
-  const el=e.target.closest('.tile');if(!el)return;
+  // Slippery: the tap lands a little way off from where the finger touched
+  let target=e.target;
+  if(G.slip){const hit=document.elementFromPoint(e.clientX+G.slip.dx,e.clientY+G.slip.dy);target=hit&&arena.contains(hit)?hit:arena;}
+  const el=target.closest&&target.closest('.tile');if(!el)return;
   const t=G.tiles.find(x=>x.id==el.dataset.id);if(!t||t.dead)return;
   forbidden(t)?fail(t):collect(t);
 });
 
 /* ---------- outcomes ---------- */
 const mult=()=>Math.min(5,1+Math.floor(G.streak/4));
-function floatText(x,y,txt,cls=''){const d=document.createElement('div');d.className='float '+cls;d.textContent=txt;d.style.left=x+'px';d.style.top=y+'px';arena.appendChild(d);setTimeout(()=>d.remove(),700);}
+function floatText(x,y,txt,cls=''){if(arena.classList.contains('mirror'))x=Math.max(0,G.W-x-140);const d=document.createElement('div');d.className='float '+cls;d.textContent=txt;d.style.left=x+'px';d.style.top=y+'px';arena.appendChild(d);setTimeout(()=>d.remove(),700);}
 function toast(big,small,good){const d=document.createElement('div');d.className='toast'+(good?' good':'');d.innerHTML=`<div>${big}${small?`<small>${esc(small)}</small>`:''}</div>`;arena.appendChild(d);setTimeout(()=>d.remove(),1000);}
 function bump(id){const b=$(id);b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump');}
 function collect(t){
@@ -405,7 +501,7 @@ function fail(t){
   kill(t);loseLife();
   arena.classList.remove('shake');void arena.offsetWidth;arena.classList.add('shake');
   const by=G.lastSent&&now()<G.lastSent.until?` · sent by ${G.lastSent.by}`:'';
-  toast('GOTCHA',NAMES[k]+by);
+  toast('GOTCHA',(NAMES[k]||ACTIONS[k]?.name||'Fooled')+by);
   G.freezeUntil=now()+750;
   if(G.lives<=0){G.running=false;setTimeout(()=>duel()?eliminated():gameOver(),850);}
 }
@@ -443,7 +539,7 @@ function hud(){
   [...$('#hLives').children].forEach((i,n)=>i.classList.toggle('gone',n>=G.lives));
   $('#prog').textContent=`${Math.min(G.got,G.need)} / ${G.need}`;
 }
-function clearArena(){G.tiles.slice().forEach(kill);arena.querySelectorAll('.banner,.toast,.float,.incoming').forEach(e=>e.remove());}
+function clearArena(){clearFx();G.tiles.slice().forEach(kill);arena.querySelectorAll('.banner,.toast,.float,.incoming,.fxo').forEach(e=>e.remove());}
 function prepLevel(retry){
   clearArena();measure();
   const l=G.level;
@@ -478,7 +574,7 @@ function startLevel(){
   maintain();G.running=true;G.freezeUntil=0;last=now();
   renderTricks();pub();
   // tricks that arrived between levels land shortly after the start
-  const q=G.inbox.splice(0);q.forEach(([k,f],i)=>setTimeout(()=>receive(k,f),1200+i*900));
+  const q=G.inbox.splice(0);q.forEach(([k,f,fid,a],i)=>setTimeout(()=>receive(k,f,fid,a),1200+i*900));
 }
 function intro(retry){
   prepLevel(retry);
@@ -582,31 +678,49 @@ function renderRivals(){
   $('#rivals').innerHTML=M.rivals.map(p=>{
     const need=p.need||6,got=Math.min(p.got||0,need),lives=Math.max(0,p.lives??3);
     return `<div class="riv${alive(p)?'':' out'}${t&&p.id===t.id&&M.rivals.length>1?' target':''}">
-      <span class="nm">${esc(p.name||'Player')}${t&&p.id===t.id&&M.rivals.length>1?'<em>TARGET</em>':''}${p.left?'<em style="color:var(--red)">LEFT</em>':''}</span>
+      <span class="nm">${esc(p.name||'Player')}<em class="cls">${(LOADOUTS[p.cls]?.name||'').toUpperCase()}</em>${t&&p.id===t.id&&M.rivals.length>1?'<em>TARGET</em>':''}${p.left?'<em style="color:var(--red)">LEFT</em>':''}</span>
       <span class="lvl">L${p.level||1}</span>
       <span class="pb"><i style="width:${alive(p)?got/need*100:0}%"></i></span>
       <span class="lv">${[0,1,2].map(i=>`<i class="${i<lives?'':'gone'}"></i>`).join('')}</span></div>`;
   }).join('');
 }
+const defUp=()=>G.def&&now()<G.def.until;
 function renderTricks(){
   if(!duel())return;
   $('#pips').innerHTML=Array.from({length:MAX_CHARGE},(_,i)=>`<i class="${i<G.charge?'on':''}"></i>`).join('');
-  const t=target();
-  $('#tks').innerHTML=SEND_ORDER.map(k=>{
-    const weak=t&&t.weak===k;
-    return `<button class="tk${weak?' weak':''}" data-k="${k}" ${G.running&&t&&G.charge>=COST[k]?'':'disabled'}>${TRICKS[k].name}<small>${COST[k]} ⚡${weak?' · their weakness':''}</small></button>`;
+  $('#chgLbl').textContent=defUp()?`${ACTIONS[G.def.k].name.toUpperCase()} UP · ${Math.ceil((G.def.until-now())/1000)}s · ATTACKS LOCKED`:`${LOADOUTS[M.loadout].name.toUpperCase()} · TRAP CHARGE`;
+  const t=target(),locked=defUp();
+  $('#tks').innerHTML=LOADOUTS[M.loadout].acts.map(k=>{
+    const a=ACTIONS[k],def=a.kind==='def',weak=!def&&t&&t.weak===k;
+    const ok=G.running&&G.charge>=a.cost&&!locked&&(def||t);
+    return `<button class="tk${def?' def':''}${weak?' weak':''}${locked&&G.def.k===k?' on':''}" data-k="${k}" ${ok?'':'disabled'}>${a.name}<small>${a.cost} ⚡${weak?' · weak spot':''}</small></button>`;
   }).join('');
 }
-$('#tks').addEventListener('click',e=>{const b=e.target.closest('button.tk');if(b&&!b.disabled)sendTrick(b.dataset.k);});
+// pointerdown, not click: the bar re-renders often and a click could land between renders
+$('#tks').addEventListener('pointerdown',e=>{const b=e.target.closest('button.tk');if(b&&!b.disabled){e.preventDefault();useAction(b.dataset.k);}});
+function useAction(k){ACTIONS[k].kind==='def'?raiseDef(k):sendTrick(k);}
+function raiseDef(k){
+  if(!G.running||defUp()||G.charge<COST[k])return;
+  G.charge-=COST[k];
+  G.def={k,until:now()+DEF_LOCK[k]*1000};
+  if(k==='cleanse'){cleanse();toast('CLEANSED','Screen cleared',true);}
+  else if(k==='decoy'){G.decoy={got:Math.random()<.5?0:Math.max(0,G.need-1),lives:3};toast('DECOY ON','Rivals see fake numbers',true);}
+  else{arena.classList.add(k==='shield'?'def-shield':'def-reflect');toast(k==='shield'?'SHIELD UP':'REFLECT UP','Stops the next action · 10s',true);}
+  renderTricks();pub();
+}
+function endDef(){G.def=null;G.decoy=null;arena.classList.remove('def-shield','def-reflect');renderTricks();pub();}
 function sendTrick(k){
-  const t=target();if(!t||G.charge<COST[k]||!G.running)return;
+  const t=target();if(!t||G.charge<COST[k]||!G.running||defUp())return;
   G.charge-=COST[k];renderTricks();pub();
-  floatText(G.W/2-70,G.H-40,`${TRICKS[k].name} → ${t.name}`,'sent');
+  floatText(G.W/2-70,G.H-40,`${ACTIONS[k].name} → ${t.name}`,'sent');
   if(M.mode==='cpu')botReceive(k);
   else sendEvent(t.id,k);
 }
 let pubTimer=null,pubDirty=false;
-function myState(){return{name:M.me.name,level:G.level,got:G.got,need:G.need,lives:Math.max(0,G.lives),alive:!M.out,outAt:M.outAt||0,weak:weakness()||'',charge:G.charge};}
+function myState(){
+  const dec=G.decoy&&defUp()&&G.def.k==='decoy'?G.decoy:null;   // Decoy Signal: rivals see made-up progress
+  return{name:M.me.name,cls:M.loadout,level:G.level,got:dec?dec.got:G.got,need:G.need,lives:dec?dec.lives:Math.max(0,G.lives),alive:!M.out,outAt:M.outAt||0,weak:weakness()||'',charge:G.charge};
+}
 function pub(){
   if(M.mode!=='online'||!M.active||!M.room)return;
   pubDirty=true;if(pubTimer)return;
@@ -664,7 +778,8 @@ function endMatch(){
 function beginMatch(seed){
   M.seed=seed;M.active=true;M.out=false;M.outAt=0;
   M.mode!=='solo'&&setDuelUI(true);
-  Object.assign(G,{level:1,lives:3,score:0,streak:0,rule:null,notes:[],endless:false,charge:0,inbox:[],lastSent:null});
+  Object.assign(G,{level:1,lives:3,score:0,streak:0,rule:null,notes:[],endless:false,charge:0,inbox:[],lastSent:null,def:null,decoy:null});
+  arena.classList.remove('def-shield','def-reflect');
   renderRivals();renderTricks();
   intro(false);
 }
@@ -684,7 +799,7 @@ let botTimer=null;
 function startCpu(level){
   stopBot();
   M.mode='cpu';M.level=level;const cfg=BOT[level];
-  const b={id:'cpu',name:cfg.name,level:1,got:0,need:D.need(1),lives:3,alive:true,outAt:0,charge:0,
+  const b={id:'cpu',name:cfg.name,cls:pick(Object.keys(LOADOUTS)),def:null,level:1,got:0,need:D.need(1),lives:3,alive:true,outAt:0,charge:0,
     weak:pick(TK),phase:'intro',phaseUntil:Date.now()+INTRO_SECS*1000,timeLeft:0,lost:false,stunUntil:0,stunPow:0,freeze:0};
   M.bot=b;M.rivals=[b];
   beginMatch('cpu-'+Date.now());
@@ -715,15 +830,24 @@ function botTick(dt,t){
     }
     renderRivals();renderTricks();
   }
-  // the CPU spends its charge on you, aiming at your weak spot when it can
-  if(!M.out&&b.charge>=1&&Math.random()<cfg.think*dt){
-    const afford=SEND_ORDER.filter(k=>COST[k]<=b.charge);
-    const myWeak=weakness();
-    let k=null;
-    if(M.level==='hard'){k=myWeak&&COST[myWeak]<=b.charge?myWeak:(b.charge>=3?afford[afford.length-1]:null);}
-    else if(M.level==='medium'){k=myWeak&&COST[myWeak]<=b.charge&&Math.random()<.5?myWeak:(b.charge>=2?pick(afford):null);}
-    else{k=pick(afford.filter(x=>COST[x]<=2));}
-    if(k){b.charge-=COST[k];receive(k,b.name);renderRivals();}
+  // the CPU plays its own loadout: raises a defense now and then, otherwise attacks (your weak spot if it can)
+  if(b.def&&t>b.def.until)b.def=null;
+  if(!M.out&&!b.def&&b.charge>=1&&Math.random()<cfg.think*dt){
+    const acts=LOADOUTS[b.cls].acts,defs=acts.filter(k=>ACTIONS[k].kind==='def'&&COST[k]<=b.charge);
+    if(defs.length&&Math.random()<.22){
+      const k=pick(defs);b.charge-=COST[k];b.def={k,until:t+DEF_LOCK[k]*1000};
+      if(k==='cleanse')b.stunUntil=0;
+    }else{
+      const afford=acts.filter(k=>ACTIONS[k].kind==='off'&&COST[k]<=b.charge);
+      const myWeak=weakness();
+      let k=null;
+      if(afford.length){
+        if(M.level==='hard'){k=myWeak&&afford.includes(myWeak)?myWeak:(b.charge>=3?afford.sort((x,y)=>COST[y]-COST[x])[0]:null);}
+        else if(M.level==='medium'){k=myWeak&&afford.includes(myWeak)&&Math.random()<.5?myWeak:(b.charge>=2?pick(afford):null);}
+        else{const cheap=afford.filter(x=>COST[x]<=2);k=cheap.length?pick(cheap):null;}
+      }
+      if(k){b.charge-=COST[k];receive(k,b.name,'cpu');renderRivals();}
+    }
   }
 }
 function botLoseLife(t){
@@ -733,6 +857,14 @@ function botLoseLife(t){
 function botReceive(k){
   const b=M.bot;if(!b||!alive(b))return;
   const t=Date.now();
+  if(b.def&&t<b.def.until&&(b.def.k==='shield'||b.def.k==='reflect')){
+    const d=b.def.k;b.def=null;
+    if(d==='shield')receive('_blocked',b.name,'cpu');
+    else setTimeout(()=>receive(k,b.name,'cpu'),300);
+    return;
+  }
+  if(k==='clock'){b.timeLeft=Math.max(2,b.timeLeft-4);return;}
+  if(k==='drain'){const n=Math.ceil(b.charge/2);b.charge-=n;if(n)receive('_charge',b.name,'cpu',n);return;}
   b.stunUntil=t+4500;
   b.stunPow=(.035*COST[k])*(k===b.weak?2.2:1);
 }
@@ -745,7 +877,7 @@ async function createRoom(){
   let code;
   for(let i=0;i<6;i++){code=newCode();if(!(await get(ref(db,`rooms/${code}/game`))).exists())break;}
   await set(ref(db,`rooms/${code}`),{game:GAME,created:serverTimestamp(),host:M.me.id,status:'lobby',round:0,
-    players:{[M.me.id]:{name:M.me.name,joined:Date.now()}}});
+    players:{[M.me.id]:{name:M.me.name,cls:M.loadout,joined:Date.now()}}});
   enterRoom(fb,code);
 }
 async function joinRoom(code){
@@ -758,8 +890,8 @@ async function joinRoom(code){
   if(!players[M.me.id]){
     if(r.status!=='lobby')throw new Error('That match already started. Ask for a rematch invite.');
     if(Object.keys(players).length>=4)throw new Error('That room is full (4 players max).');
-    await set(ref(db,`rooms/${code}/players/${M.me.id}`),{name:M.me.name,joined:Date.now()});
-  }
+    await set(ref(db,`rooms/${code}/players/${M.me.id}`),{name:M.me.name,cls:M.loadout,joined:Date.now()});
+  }else await set(ref(db,`rooms/${code}/players/${M.me.id}/cls`),M.loadout);
   enterRoom(fb,code);
 }
 function enterRoom(fb,code){
@@ -786,7 +918,7 @@ function handleRoom(r){
     if(r.round!==M.round){
       M.round=r.round;M.seenEvents=new Set();M.order=order;
       if(!order.includes(M.me.id)){M.active=false;overlay.innerHTML=`<div class="card"><div class="eyebrow">Room ${R.code}</div><h2>Match in progress</h2><p class="muted">You'll be in the next round when the host starts a rematch.</p><div class="btns"><button class="ghost" id="leave">Leave room</button></div></div>`;overlay.hidden=false;$('#leave').onclick=leaveMatch;return;}
-      M.rivals=order.filter(id=>id!==M.me.id).map(id=>({id,name:players[id]?.name||'Player',level:1,got:0,need:6,lives:3,alive:true}));
+      M.rivals=order.filter(id=>id!==M.me.id).map(id=>({id,name:players[id]?.name||'Player',cls:players[id]?.cls,level:1,got:0,need:6,lives:3,alive:true}));
       beginMatch(r.seed);
     }
     if(!M.order.includes(M.me.id))return;
@@ -803,7 +935,7 @@ function handleRoom(r){
     const ev=r.events||{};
     for(const [k,e] of Object.entries(ev)){
       if(e.to!==M.me.id||e.round!==M.round||M.seenEvents.has(k))continue;
-      M.seenEvents.add(k);receive(e.trick,e.fromName||'Rival');
+      M.seenEvents.add(k);receive(e.trick,e.fromName||'Rival',e.from,e.amt);
       R.fb.remove(R.fb.ref(R.fb.db,`rooms/${R.code}/events/${k}`)).catch(()=>{});
     }
     if(M.active)checkOver();
@@ -822,13 +954,13 @@ function renderLobby(r){
   const players=r.players||{},online=r.online||{};
   const ids=Object.keys(players).filter(id=>online[id]||id===M.me.id).sort((a,b)=>players[a].joined-players[b].joined);
   const host=r.host===M.me.id;
-  const key=JSON.stringify([ids,ids.map(i=>players[i].name),r.host]);
+  const key=JSON.stringify([ids,ids.map(i=>players[i].name+players[i].cls),r.host]);
   if(key===M.room.lobbyKey&&!overlay.hidden)return;M.room.lobbyKey=key;
   overlay.innerHTML=`<div class="card">
     <div class="eyebrow hot">Trick Trap · online duel</div>
     <div class="eyebrow" style="text-align:center">Room code</div>
     <div class="bigcode">${M.room.code}</div>
-    <ul class="plist">${ids.map(id=>`<li class="${id===M.me.id?'me':''}"><span>${esc(players[id].name||'Player')}${id===M.me.id?' (you)':''}</span>${id===r.host?'<em>HOST</em>':''}</li>`).join('')}
+    <ul class="plist">${ids.map(id=>`<li class="${id===M.me.id?'me':''}"><span>${esc(players[id].name||'Player')}${id===M.me.id?' (you)':''}<small class="pcls">${(LOADOUTS[players[id].cls]?.name||'').toUpperCase()}</small></span>${id===r.host?'<em>HOST</em>':''}</li>`).join('')}
       ${ids.length<4?`<li style="opacity:.45"><span>Waiting for players…</span><em>${ids.length}/4</em></li>`:''}</ul>
     <p class="muted">${ids.length<2?'Send your friends the code or invite link. 2 to 4 players.':host?'Everyone in? Start when ready.':'Waiting for the host to start.'}</p>
     <div class="btns">${host?`<button class="big" id="start" ${ids.length<2?'disabled':''}>Start match</button>`:''}
@@ -852,10 +984,11 @@ function hostStart(){
     R.fb.update(R.ref,{status:'playing',round:(r.round||0)+1,seed:Math.random().toString(36).slice(2),order,live:null,events:null});
   });
 }
-function sendEvent(to,k){
+function sendEvent(to,k,amt){
   const R=M.room;if(!R)return;
   const key=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  R.fb.set(R.fb.ref(R.fb.db,`rooms/${R.code}/events/${key}`),{to,from:M.me.id,fromName:M.me.name||'Rival',trick:k,round:M.round}).catch(()=>{});
+  const ev={to,from:M.me.id,fromName:M.me.name||'Rival',trick:k,round:M.round};if(amt!=null)ev.amt=amt;
+  R.fb.set(R.fb.ref(R.fb.db,`rooms/${R.code}/events/${key}`),ev).catch(()=>{});
 }
 function leaveRoom(silent){
   const R=M.room;if(!R)return;
@@ -877,6 +1010,10 @@ function title(msg){
     <div class="mode"><h3>SOLO · 30 LEVELS</h3>
       <p>Colors change. Labels lie. Every 5th level is a boss, and the game leans on the tricks that fool you.</p>
       <div class="btns"><button class="big" id="start">Play solo</button>${seen?'<button class="ghost" id="dos">Dossier</button>':''}</div></div>
+    <div class="mode"><h3>DUEL LOADOUT</h3>
+      <p>Pick your 8 actions for duels. Raising a defense locks your attacks until it's used up or runs out.</p>
+      <div class="louts">${Object.entries(LOADOUTS).map(([id,l])=>`<button class="lout${id===M.loadout?' on':''}" data-lo="${id}"><b>${l.name}</b><span>${l.tag}</span>
+        <i>${l.acts.map(k=>`<em class="${ACTIONS[k].kind}">${ACTIONS[k].name}</em>`).join('')}</i></button>`).join('')}</div></div>
     <div class="mode"><h3>DUEL VS COMPUTER</h3>
       <p>Same rules as your rival. Safe taps charge traps you can fire at their screen. Last one standing wins.</p>
       <div class="btns"><button class="ghost" data-l="easy">Easy</button><button class="ghost on" data-l="medium">Medium</button><button class="ghost" data-l="hard">Hard</button><button class="big" id="cpu">Duel</button></div></div>
@@ -890,6 +1027,8 @@ function title(msg){
   overlay.hidden=false;
   $('#start').onclick=newGame;
   if($('#dos'))$('#dos').onclick=showDossier;
+  const lo=[...overlay.querySelectorAll('[data-lo]')];
+  lo.forEach(b=>b.onclick=()=>{lo.forEach(x=>x.classList.toggle('on',x===b));M.loadout=b.dataset.lo;try{localStorage.setItem('tt-loadout',M.loadout)}catch(e){}});
   const lv=[...overlay.querySelectorAll('[data-l]')];
   lv.forEach(b=>b.onclick=()=>{lv.forEach(x=>x.classList.toggle('on',x===b));M.level=b.dataset.l;});
   $('#cpu').onclick=()=>startCpu(overlay.querySelector('[data-l].on').dataset.l);
@@ -916,4 +1055,4 @@ if(roomParam&&onlineReady){
   else{$('#msg').textContent=`Enter your name, then tap Join for room ${roomParam}.`;$('#name').focus();}
 }else if(qs.get('mode')==='cpu')startCpu('medium');
 else title();
-if(qs.has('test'))window.__tt={G,M,forbidden,sendTrick,receive,target,ruleFor:(seed,l)=>{RNG=seeded(seed+':'+l);const r=makeRule(l);RNG=Math.random;return JSON.stringify(r);}};
+if(qs.has('test'))window.__tt={G,M,forbidden,sendTrick,receive,target,useAction,LOADOUTS,ACTIONS,ruleFor:(seed,l)=>{RNG=seeded(seed+':'+l);const r=makeRule(l);RNG=Math.random;return JSON.stringify(r);}};
