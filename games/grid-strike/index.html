@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Grid Strike | Evolution Arcade</title>
+<meta name="description" content="Hide your fleet, call your shots, sink theirs first. Play the computer or a friend online.">
+<meta name="theme-color" content="#050705">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../css/arcade.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--g);margin:16px auto 8px;max-width:440px}
+.lbl span:last-child{color:var(--m);letter-spacing:1px}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:440px;margin:0 auto;padding:8px;border:1px solid var(--line2);background:radial-gradient(circle at 50% 50%,rgba(57,255,20,.06),transparent 70%),#050a05;position:relative}
+.grid.small{max-width:250px;gap:2px;padding:5px}
+.grid::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 0,rgba(57,255,20,.07) 50%,transparent 51%) 0 0/100% 8px;opacity:.6}
+.c{aspect-ratio:1;border:1px solid #142814;background:#071007;position:relative;padding:0;cursor:default;display:flex;align-items:center;justify-content:center}
+.grid.fire .c.open{cursor:crosshair}
+.grid.fire .c.open:hover{background:rgba(57,255,20,.18);border-color:var(--g)}
+.grid{--gap:3px}.grid.small{--gap:2px}
+.c.ship{background:linear-gradient(#1f6b12,#11420a);border-color:#174d0d}
+.c.ship.v0.v1:not(.h1){box-shadow:var(--gap) 0 0 #164f0c}
+.c.ship.h0.h1:not(.v1){box-shadow:0 var(--gap) 0 #164f0c}
+.c.ship.h0{border-left:2px solid var(--g);border-radius:6px 0 0 6px}.c.ship.h1{border-right:2px solid var(--g);border-radius:0 6px 6px 0}.c.ship.h0.h1{border-radius:0}
+.c.ship.v0{border-top:2px solid var(--g)}.c.ship.v1{border-bottom:2px solid var(--g)}
+.c.ship.h0.h1.v0{border-radius:6px 6px 0 0}.c.ship.h0.h1.v1{border-radius:0 0 6px 6px}.c.ship.h0.h1.v0.v1{border-radius:6px}
+.c.miss::after{content:"";width:22%;aspect-ratio:1;border-radius:50%;background:#6f8a6a}
+.c.hit{background:#3a0808;border-color:#ff3b3b;box-shadow:inset 0 0 8px rgba(255,59,59,.6)}
+.c.hit::after{content:"✕";color:#ff6b6b;font-family:var(--display);font-weight:900;font-size:clamp(9px,2.6vw,15px);text-shadow:0 0 6px #ff3b3b}
+.grid.small .c.hit::after{font-size:8px}
+.c.sunk{background:#1d0505;border-color:#fff}
+.c.sunk::after{color:#fff;text-shadow:0 0 6px #fff}
+.c.last{animation:ping .9s ease-out 2}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.9)}100%{box-shadow:0 0 0 10px rgba(255,255,255,0)}}
+.c.sel{outline:2px solid #fff;outline-offset:1px}
+.fleet{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:440px;margin:10px auto 0}
+.fleet span{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:5px 8px;border:1px solid var(--line2);color:var(--t)}
+.fleet span i{display:inline-block;height:6px;background:var(--g);margin-right:6px;vertical-align:1px}
+.fleet span.dead{opacity:.35;text-decoration:line-through}
+.fleet span.dead i{background:var(--red)}
+.setupbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+.explode{position:absolute;inset:-30%;border-radius:50%;background:radial-gradient(circle,rgba(255,200,120,.95),rgba(255,59,59,.6) 40%,transparent 70%);animation:boom .5s ease-out forwards;pointer-events:none;z-index:2}
+@keyframes boom{from{transform:scale(.2);opacity:1}to{transform:scale(1.6);opacity:0}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="../../">EVOLUTION<span>//</span>ARCADE</a>
+  <div class="nav-links"><a class="keep" href="../../">← ALL GAMES</a></div>
+</nav>
+<main class="gm">
+  <div class="gtitle">
+    <div class="tag">&gt; 1V1 · TURN-BASED</div>
+    <h1>GRID <span>STRIKE</span></h1>
+    <p>Hide your fleet, call your shots, sink theirs first.</p>
+  </div>
+
+  <section class="menu" id="menu">
+    <div class="opt">
+      <h2>VS COMPUTER</h2>
+      <p>Play solo against a computer fleet.</p>
+      <div class="row">
+        <div class="seg" id="level"><button data-l="easy">EASY</button><button data-l="medium" class="on">MEDIUM</button><button data-l="hard">HARD</button></div>
+        <button class="btn fill" id="goCpu">▶ PLAY</button>
+      </div>
+    </div>
+    <div class="opt">
+      <h2>ONLINE VS A FRIEND</h2>
+      <p>Make a room and send your friend the code or link.</p>
+      <div class="row"><input class="tin" id="name" maxlength="12" placeholder="Your name" autocomplete="off" style="flex:1"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn fill" id="goCreate">CREATE ROOM</button>
+        <input class="code-in" id="joinCode" maxlength="4" placeholder="____" aria-label="Room code" autocapitalize="characters" spellcheck="false" autocomplete="off">
+        <button class="btn" id="goJoin">JOIN</button>
+      </div>
+      <div class="note" id="onlineNote" role="status"></div>
+    </div>
+    <div class="rules"><b>How it works:</b> place 5 ships (Carrier 5, Battleship 4, Cruiser 3, Sub 3, Destroyer 2). Take turns firing at the enemy grid. Sink every ship to win.</div>
+  </section>
+
+  <section class="wait" id="wait" hidden>
+    <div class="tag">ROOM CODE</div>
+    <div class="big" id="waitCode">----</div>
+    <p>Waiting for your friend to join<span class="dots"></span></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn fill" id="share">SHARE INVITE LINK</button>
+      <button class="btn" id="cancelWait">CANCEL</button>
+    </div>
+    <div class="note" id="shareNote" role="status"></div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="hud">
+      <div class="who" id="whoMe"><div class="nm" id="nameMe">YOU</div><div class="sub" id="leftMe">5 SHIPS</div></div>
+      <div class="score"><span id="score">0 – 0</span><small id="scoreLbl">SCORE</small></div>
+      <div class="who r" id="whoThem"><div class="nm" id="nameThem">CPU</div><div class="sub" id="leftThem">5 SHIPS</div></div>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <div class="hint" id="hint"></div>
+
+    <div id="enemyBox">
+      <div class="lbl"><span>ENEMY WATERS</span><span id="shotsLbl">0 SHOTS</span></div>
+      <div class="grid" id="enemy"></div>
+      <div class="fleet" id="enemyFleet"></div>
+    </div>
+    <div id="mineBox">
+      <div class="lbl" id="mineLbl"><span>YOUR FLEET</span><span id="mineSub"></span></div>
+      <div class="grid" id="mine"></div>
+    </div>
+    <div class="setupbar" id="setupBar">
+      <button class="btn" id="shuffle">↻ SHUFFLE</button>
+      <button class="btn fill" id="ready">READY ▶</button>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="actions">
+      <button class="btn fill" id="again" hidden>REMATCH</button>
+      <button class="btn" id="toMenu">MENU</button>
+    </div>
+  </section>
+</main>
+<footer class="footer"><span>© 2026 EVOLUTION WRAPS · BAKERSFIELD, CA</span><span>GAMES.EVOLUTION-WRAPS.COM</span></footer>
+<script type="module" src="game.js"></script>
+</body>
+</html>

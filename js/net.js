@@ -47,4 +47,8 @@ export async function roomGame(code) {
 export const GAME_PATHS = {
   "tic-tac-gone": "games/tic-tac-gone/",
   "trick-trap": "games/trick-trap/",
+  "four-down": "games/four-down/",
+  "grid-strike": "games/grid-strike/",
+  "launch-control": "games/launch-control/",
+  "hyperflip": "games/hyperflip/",
 };

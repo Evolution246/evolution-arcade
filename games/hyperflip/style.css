@@ -1,0 +1,42 @@
+#stage{position:fixed;inset:0;z-index:100;background:#020402;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#cab{position:relative;width:400px;height:900px;flex-shrink:0;transform-origin:center center;overflow:hidden;background:#030503}
+.dmd{position:absolute;left:8px;right:8px;top:8px;height:62px;border:1px solid #1d351a;border-radius:10px;background:radial-gradient(ellipse at 50% 0,rgba(57,255,20,.12),transparent 70%),#060a06;display:grid;grid-template-columns:1fr 1.3fr 1fr;align-items:center;padding:0 12px}
+.dmd small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--m)}
+.dmd b{font-family:var(--display);font-weight:900;font-size:20px;color:var(--g);text-shadow:0 0 10px rgba(57,255,20,.6);letter-spacing:1px}
+.dr{text-align:right}
+.dm{text-align:center;font-family:var(--display);font-weight:900;font-size:13px;letter-spacing:2px;color:#fff;line-height:1.15}
+.dm.hot{color:var(--g);text-shadow:0 0 12px var(--g);animation:blink .25s steps(2) 6}
+@keyframes blink{50%{opacity:.35}}
+.riv{position:absolute;left:8px;right:8px;top:74px;height:22px;display:flex;gap:6px;justify-content:center;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--t);z-index:3}
+.riv span{padding:4px 8px;border:1px solid #1d351a;border-radius:6px;background:rgba(6,10,6,.9);white-space:nowrap}
+.riv span.lead{border-color:var(--g);color:var(--g)}
+.riv span.done{opacity:.5}
+#table{position:absolute;left:0;top:72px;width:400px;height:720px;display:block}
+.fbtns{position:absolute;left:8px;right:8px;top:796px;bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fb{position:relative;border:2px solid var(--g);border-radius:16px;background:rgba(57,255,20,.06);color:var(--g);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:900;font-size:30px;cursor:pointer;transition:background .05s}
+.fb.down{background:rgba(57,255,20,.35);box-shadow:0 0 24px rgba(57,255,20,.5)}
+.fb kbd{position:absolute;top:8px;left:12px;font-family:var(--mono);font-size:11px;opacity:.6}
+#fbR kbd{left:auto;right:12px}
+.cbtn{position:fixed;z-index:110;top:max(10px,env(safe-area-inset-top));width:32px;height:32px;border-radius:8px;border:1px solid #1d351a;background:rgba(5,7,5,.85);color:var(--m);font-size:14px;display:flex;align-items:center;justify-content:center;padding:0}
+#quit{left:max(10px,env(safe-area-inset-left))}#mute{right:max(10px,env(safe-area-inset-right))}
+.card2{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,6,3,.88);padding:26px}
+.card2[hidden]{display:none}
+.card2 .in{width:100%;display:flex;flex-direction:column;gap:14px;text-align:center}
+.card2 .ey{font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--g)}
+.card2 h1{font-family:var(--display);font-weight:900;font-size:40px;color:var(--g);text-shadow:0 0 22px rgba(57,255,20,.7);letter-spacing:2px;margin:0;line-height:1}
+.card2 h1.wh{color:#fff;text-shadow:none}
+.card2 .big{font-family:var(--display);font-weight:900;font-size:44px;color:#fff;letter-spacing:1px}
+.card2 p{color:var(--t2);font-size:16px;margin:0}
+.card2 .cb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card2 .cb button{font-family:var(--display);font-weight:900;font-size:13px;letter-spacing:2px;padding:14px 8px;border-radius:10px}
+.card2 .cb .a{background:var(--g);color:#031003}.card2 .cb .b{border:1px solid #1d351a;color:var(--m)}
+.card2 .cb button:disabled{opacity:.45}
+.card2 .code{font-family:var(--display);font-weight:900;font-size:56px;letter-spacing:.22em;color:var(--g);text-shadow:0 0 20px rgba(57,255,20,.6);padding-left:.22em}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+.plist li{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:15px;padding:11px 13px;border:1px solid #1d351a;border-radius:8px;background:#060a06}
+.plist li em{font-style:normal;font-size:11px;letter-spacing:2px;color:var(--g)}
+.plist li.me{border-color:var(--g)}
+.plist li b{font-family:var(--display);color:var(--m);margin-right:10px}
+.plist li.win b{color:var(--g)}
+.howto{font-family:var(--mono);font-size:12px;color:var(--t);text-align:left;line-height:1.75;border-left:2px solid #1d351a;padding-left:12px}
+.howto b{color:var(--g);font-weight:400}

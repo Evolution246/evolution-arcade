@@ -1,0 +1,42 @@
+/* Shared layout for arcade game pages (menu cards, HUD, room screens). Loads after arcade.css. */
+main.gm{max-width:640px;margin:0 auto;padding:clamp(16px,4vw,34px) 16px 56px}
+.gtitle{text-align:center}
+.gtitle h1{font-family:var(--display);font-weight:900;font-size:clamp(32px,8vw,52px);letter-spacing:3px;color:#fff;margin:10px 0 6px;line-height:1}
+.gtitle h1 span{color:var(--g);text-shadow:0 0 16px var(--g-glow)}
+.gtitle p{margin:0;color:var(--t2)}
+[hidden]{display:none!important}
+.menu{margin-top:26px;display:flex;flex-direction:column;gap:14px}
+.opt{border:1px solid var(--line);background:var(--panel);padding:18px 20px;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.opt h2{font-family:var(--display);font-size:17px;letter-spacing:2px;color:#fff;margin:0}
+.opt p{margin:4px 0 12px;color:var(--t2);font-size:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:flex;border:1px solid var(--line2)}
+.seg button{font-family:var(--mono);font-size:13px;letter-spacing:2px;padding:11px 15px;color:var(--m)}
+.seg button.on{background:var(--g);color:#031003}
+.tin{height:46px;border:1px solid var(--line2);background:var(--panel2);color:var(--t);font-family:var(--mono);font-size:16px;padding:0 12px;min-width:0}
+.tin:focus{outline:none;border-color:var(--g)}
+.code-in{width:140px;height:46px;border:1px solid var(--g);background:var(--g-soft);color:var(--g);font-family:var(--display);font-weight:900;font-size:21px;letter-spacing:10px;text-align:center;padding-left:10px;text-transform:uppercase}
+.code-in::placeholder{color:#24461f}
+.note{font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--m);margin-top:10px;min-height:16px}
+.note.err{color:var(--red)}
+.rules{border-left:2px solid var(--line2);padding:4px 0 4px 16px;color:var(--t2);font-size:16px}
+.rules b{color:var(--g);font-weight:600}
+.wait{margin-top:26px;text-align:center;border:1px solid var(--g);background:var(--g-soft);padding:28px 20px}
+.wait .big{font-family:var(--display);font-weight:900;font-size:clamp(46px,14vw,72px);letter-spacing:14px;color:var(--g);text-shadow:0 0 22px var(--g-glow);margin:10px 0 6px;padding-left:14px}
+.wait p{color:var(--t2);margin:0 0 18px}
+.dots::after{content:"";animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.hud{margin-top:22px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.who{border:1px solid var(--line);padding:11px 13px;background:var(--panel2);transition:border-color .2s,box-shadow .2s;min-width:0}
+.who.r{text-align:right}
+.who.turn{border-color:var(--g);box-shadow:0 0 18px rgba(57,255,20,.25)}
+.who .nm{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .sub{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--m);margin-top:6px}
+.score{font-family:var(--display);font-weight:900;font-size:24px;color:var(--g);text-align:center;letter-spacing:2px}
+.score small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--m);font-weight:400}
+.status{margin:20px 0 12px;text-align:center;font-family:var(--display);font-size:16px;letter-spacing:2px;color:#fff;min-height:22px}
+.status.win{color:var(--g);text-shadow:0 0 12px var(--g-glow)}
+.status.lose{color:var(--red)}
+.hint{text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--m);min-height:18px;margin-bottom:12px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px}
+.banner{margin-top:12px;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--red)}

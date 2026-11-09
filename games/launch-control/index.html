@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Launch Control | Evolution Arcade</title>
+<meta name="description" content="1v1 quarter-mile drag racing. Nail the tree, hit your shifts, time your nitro.">
+<meta name="theme-color" content="#050705">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../css/arcade.css">
+<link rel="stylesheet" href="../../css/game.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="../../">EVOLUTION<span>//</span>ARCADE</a>
+  <div class="nav-links"><a class="keep" href="../../">← ALL GAMES</a></div>
+</nav>
+<main class="gm">
+  <div class="gtitle">
+    <div class="tag">&gt; 1V1 · DRAG RACE · BEST OF 3</div>
+    <h1>LAUNCH <span>CONTROL</span></h1>
+    <p>Rev it, nail the tree, hit your shifts, time your nitro.</p>
+  </div>
+
+  <section class="menu" id="menu">
+    <div class="opt">
+      <h2>WRAP YOUR RIDE</h2>
+      <div class="preview" id="preview"></div>
+      <div class="wraps" id="wraps"></div>
+      <div class="wrapname" id="wrapName"></div>
+    </div>
+    <div class="opt">
+      <h2>VS COMPUTER</h2>
+      <p>Best of 3 against a CPU driver.</p>
+      <div class="row">
+        <div class="seg" id="level"><button data-l="easy">EASY</button><button data-l="medium" class="on">MEDIUM</button><button data-l="hard">HARD</button></div>
+        <button class="btn fill" id="goCpu">▶ RACE</button>
+      </div>
+    </div>
+    <div class="opt">
+      <h2>ONLINE 1V1</h2>
+      <p>Make a room and send your friend the code or link. You both race the same tree.</p>
+      <div class="row"><input class="tin" id="name" maxlength="12" placeholder="Your name" autocomplete="off" style="flex:1"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn fill" id="goCreate">CREATE ROOM</button>
+        <input class="code-in" id="joinCode" maxlength="4" placeholder="____" aria-label="Room code" autocapitalize="characters" spellcheck="false" autocomplete="off">
+        <button class="btn" id="goJoin">JOIN</button>
+      </div>
+      <div class="note" id="onlineNote" role="status"></div>
+    </div>
+    <div class="rules"><b>How to drive:</b> hold <b>REV</b> to keep the needle in the green launch window, tap <b>LAUNCH</b> on green (going early is a red light), tap <b>SHIFT</b> when the needle hits the green band, and fire your one <b>NITRO</b>.
+      <div class="keys" style="margin-top:8px">On a computer: hold <b>S</b> for rev and nitro, and press <b>SPACE</b> to launch and shift.</div></div>
+  </section>
+
+  <section class="wait" id="wait" hidden>
+    <div class="tag">ROOM CODE</div>
+    <div class="big" id="waitCode">----</div>
+    <p>Waiting for your friend to join<span class="dots"></span></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn fill" id="share">SHARE INVITE LINK</button>
+      <button class="btn" id="cancelWait">CANCEL</button>
+    </div>
+    <div class="note" id="shareNote" role="status"></div>
+  </section>
+</main>
+<footer class="footer"><span>© 2026 EVOLUTION WRAPS · BAKERSFIELD, CA</span><span>GAMES.EVOLUTION-WRAPS.COM</span></footer>
+
+<div id="stage" hidden>
+  <button class="cbtn" id="quit" aria-label="Quit race">✕</button>
+  <button class="cbtn" id="mute" aria-label="Sound on or off">🔊</button>
+  <div id="cab">
+    <div class="c-top"><div class="c-nm" id="nmY">YOU<span id="subY">LANE 2</span></div><div class="c-round" id="roundBox">ROUND 1</div><div class="c-nm r" id="nmR">RIVAL<span id="subR">CPU</span></div></div>
+    <div class="c-prog"><div class="ln"></div><div class="fl"></div><i id="pR"></i><i id="pY"></i></div>
+    <div class="track">
+      <div class="sky"></div>
+      <div id="poles"></div>
+      <div id="stand"></div>
+      <div class="lane" style="top:108px"></div>
+      <div id="dash"></div>
+      <div class="lane" style="top:258px"></div>
+      <div id="world"></div>
+      <div id="speeds"></div>
+      <div class="smoke" id="smkY"></div><div class="smoke" id="smkR"></div>
+      <div class="car" id="carR"></div>
+      <div class="pop" id="popR"></div>
+      <div class="car" id="carY"></div>
+      <div class="flame" id="flame"></div><div class="pop" id="popY"></div>
+      <div class="toast" id="toast"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <div class="tach">
+      <div class="leds" id="leds"></div>
+      <svg width="240" height="130" viewBox="0 0 240 130">
+        <path d="M24 120 A96 96 0 0 1 216 120" fill="none" stroke="#152015" stroke-width="13"/>
+        <path id="zone" fill="none" stroke="#39ff14" stroke-width="13" opacity=".9"/>
+        <path id="redz" fill="none" stroke="#ff3b3b" stroke-width="13" opacity=".85"/>
+        <path id="trail" fill="none" stroke="#39ff14" stroke-width="3.5" opacity=".55"/>
+        <g font-family="Mono,monospace" font-size="10" fill="#6f8a6a" text-anchor="middle" id="ticks"></g>
+        <line id="needle" x1="120" y1="120" x2="120" y2="30" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="120" cy="120" r="8" fill="#0b120b" stroke="#fff" stroke-width="2"/>
+      </svg>
+      <div class="ro" id="gear"><small>GEAR</small><span>N</span></div>
+      <div class="ro" id="mph"><small id="mphL">RPM</small><span>900</span></div>
+    </div>
+    <div class="ctrls">
+      <div class="pad" id="padL" role="button" aria-label="Rev or nitro"><kbd>S</kbd><span id="padLt">REV</span><small id="padLs">HOLD · KEEP IT GREEN</small></div>
+      <div class="pad" id="padR" role="button" aria-label="Launch or shift"><kbd>SPACE</kbd><span id="padRt">LAUNCH</span><small id="padRs">TAP ON GREEN</small></div>
+    </div>
+    <div class="rbanner" id="rbanner" hidden></div>
+    <div class="card2" id="card" hidden><div class="in" id="cardIn"></div></div>
+    <div class="scan"></div>
+  </div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>

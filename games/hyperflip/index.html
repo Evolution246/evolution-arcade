@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HYPERFLIP Pinball | Evolution Arcade</title>
+<meta name="description" content="A futuristic neon pinball table. Play solo for a high score or race friends' scores live online.">
+<meta name="theme-color" content="#050705">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../css/arcade.css">
+<link rel="stylesheet" href="../../css/game.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="../../">EVOLUTION<span>//</span>ARCADE</a>
+  <div class="nav-links"><a class="keep" href="../../">← ALL GAMES</a></div>
+</nav>
+<main class="gm">
+  <div class="gtitle">
+    <div class="tag">&gt; PINBALL · SOLO OR ONLINE</div>
+    <h1>HYPER<span>FLIP</span></h1>
+    <p>A neon pinball table from the future. Three balls. Chase the jackpot.</p>
+  </div>
+  <section class="menu" id="menu">
+    <div class="opt">
+      <h2>SOLO</h2>
+      <p id="best">Play for a high score.</p>
+      <button class="btn fill" id="goSolo">▶ PLAY</button>
+    </div>
+    <div class="opt">
+      <h2>ONLINE SCORE DUEL · 2–4 PLAYERS</h2>
+      <p>Everyone plays their own table at the same time with live scores. Highest score after 3 balls wins.</p>
+      <div class="row"><input class="tin" id="name" maxlength="12" placeholder="Your name" autocomplete="off" style="flex:1"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn fill" id="goCreate">CREATE ROOM</button>
+        <input class="code-in" id="joinCode" maxlength="4" placeholder="____" aria-label="Room code" autocapitalize="characters" spellcheck="false" autocomplete="off">
+        <button class="btn" id="goJoin">JOIN</button>
+      </div>
+      <div class="note" id="onlineNote" role="status"></div>
+    </div>
+    <div class="rules"><b>Controls:</b> on a phone, hold the <b>left</b> and <b>right</b> buttons (or touch either side of the screen). On a computer, use <b>Z</b> and <b>M</b>.
+      To launch, hold a flipper button to charge the plunger, then release. (<b>Space</b> works too.)<br><br>
+      <b>Scoring:</b> light all three top lanes to raise your multiplier. Hit the core 3 times for <b>MULTIBALL</b>, then hit it again for <b>JACKPOT</b>. Complete H-Y-P for a bigger multiplier, and E-R-! for a ball save.</div>
+  </section>
+</main>
+<footer class="footer"><span>© 2026 EVOLUTION WRAPS · BAKERSFIELD, CA</span><span>GAMES.EVOLUTION-WRAPS.COM</span></footer>
+
+<div id="stage" hidden>
+  <button class="cbtn" id="quit" aria-label="Quit">✕</button>
+  <button class="cbtn" id="mute" aria-label="Sound on or off">🔊</button>
+  <div id="cab">
+    <div class="dmd">
+      <div class="dl"><small>SCORE</small><b id="score">0</b></div>
+      <div class="dm" id="msg">HYPERFLIP</div>
+      <div class="dr"><small id="ballLbl">BALL 1/3</small><b id="mult">1×</b></div>
+    </div>
+    <div class="riv" id="rivals" hidden></div>
+    <canvas id="table" width="800" height="1440"></canvas>
+    <div class="fbtns">
+      <div class="fb" id="fbL"><kbd>Z</kbd><span>◀</span></div>
+      <div class="fb" id="fbR"><kbd>M</kbd><span>▶</span></div>
+    </div>
+    <div class="card2" id="card" hidden><div class="in" id="cardIn"></div></div>
+  </div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>
