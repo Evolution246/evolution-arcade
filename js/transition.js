@@ -68,8 +68,15 @@
     var ready = function () { (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(open); setTimeout(open, 1200); };
     if (document.readyState === "complete") ready(); else addEventListener("load", ready);
   }
-  // coming back through the browser's back button from a cached page: make sure it's open
-  addEventListener("pageshow", function (e) { if (e.persisted) { el.className = ""; } });
+  // Coming back with the browser's back/forward buttons restores the old page from cache exactly as
+  // it was left, mid-transition. Fully reset it so the panels are open and clicks get through.
+  function reset() {
+    el.className = ""; el.style.pointerEvents = "";
+    var bar = el.querySelector(".bar i"); bar.style.transition = "none"; bar.style.width = "";
+    try { sessionStorage.removeItem(KEY); } catch (e) {}
+  }
+  addEventListener("pageshow", function (e) { if (e.persisted) reset(); });
+  addEventListener("pagehide", function () { setTimeout(reset, 0); });
 
   // ---------- leaving: shut, show the destination, then go ----------
   function go(url) {
