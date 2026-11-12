@@ -7,6 +7,7 @@
 <meta name="description" content="Free head-to-head browser games from Evolution Wraps. Play a friend with a room code or go solo against the computer.">
 <meta name="theme-color" content="#050705">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<script src="js/transition.js"></script>
 <link rel="preload" href="fonts/orbitron-latin-900-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/arcade.css">
 <style>
@@ -164,7 +165,7 @@ document.getElementById("joinForm").addEventListener("submit", async (e) => {
   try {
     const game = await roomGame(code);
     if (!game || !GAME_PATHS[game]) return say("No room with that code. Double-check it with your friend.", true);
-    location.href = GAME_PATHS[game] + "?room=" + code;
+    (window.evoGo || ((u) => (location.href = u)))(GAME_PATHS[game] + "?room=" + code);
   } catch { say("Couldn't reach the game server. Try again in a moment.", true); }
 });
 </script>
